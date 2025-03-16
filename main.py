@@ -243,7 +243,6 @@ class Form(QWidget):
             QMessageBox.warning(self, '경고', '공연 ID를 입력해주세요.')
             return
 
-        self.btn_find.setEnabled(False)
         self.importGoodsDetail = ImportGoodsDetail(self, ticket_id)
         self.importGoodsDetail.loadFinished.connect(self.loadFinished)
         self.importGoodsDetail.start()
@@ -281,12 +280,18 @@ class Form(QWidget):
         self.lb_ticket_end_date_value.setStyleSheet('font-weight: bold; color: red;')
 
     def start(self):
-        self.ticketer = Ticketer()
+        inter_ticket_id = self.le_ticket_id.text().replace(' ', '')
+
+        self.ticketer = Ticketer(self, inter_ticket_id)
         self.ticketer.update_signal.connect(self.printLog)
         self.ticketer.start()
+        self.btn_start.setEnabled(False)
+        self.btn_stop.setEnabled(True)
 
     def stop(self):
         self.ticketer.quit()
+        self.btn_start.setEnabled(True)
+        self.btn_stop.setEnabled(False)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
