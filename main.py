@@ -64,7 +64,7 @@ class Form(QWidget):
     def __init__(self):
         super().__init__()
         self.init_ui()
-
+        self.threads = []
         self.auto_reselect = False
 
         self.running = False
@@ -74,7 +74,6 @@ class Form(QWidget):
         self.btn_stop.clicked.connect(self.stop)
         self.btn_clear_log.clicked.connect(self.lw_log.clear)
         self.btn_find.clicked.connect(self.fetch_goods_detail)
-        self.cb_auto_reselect.stateChanged.connect(self.auto_reselect_changed)
 
     def init_ui(self):
         self.vbox = QVBoxLayout()
@@ -98,7 +97,6 @@ class Form(QWidget):
         self.btn_find = QPushButton('공연 찾기')
 
         self.cb_global = QCheckBox('글로벌 예매')
-        self.cb_lck = QCheckBox('LCK')
         self.cb_wait = QCheckBox('자동 대기열 진입')
         self.cb_wait.setChecked(True)  # ✅ 기본값을 체크 상태로 설정
 
@@ -118,7 +116,6 @@ class Form(QWidget):
         self.hbox_ticket_detail.addWidget(self.le_ticket_id)
         self.hbox_ticket_detail.addWidget(self.btn_find)
         self.hbox_ticket_detail.addWidget(self.cb_global)
-        self.hbox_ticket_detail.addWidget(self.cb_lck)
         self.hbox_ticket_detail.addWidget(self.cb_wait)
         self.hbox_ticket_detail.addWidget(self.lb_ticket_genre)
         self.hbox_ticket_detail.addWidget(self.lb_ticket_genre_value)
@@ -136,24 +133,23 @@ class Form(QWidget):
         self.gb_seq_detail = QGroupBox('회차 정보')
         self.hbox_seq_detail = QHBoxLayout()
 
-        self.lb_ticket_seq = QLabel('회차: ')
-        self.cmb_ticket_seq = QComboBox()
-        # 콤보박스 내용물 크기에 맞게 조절
-        self.cmb_ticket_seq.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-
-        self.lb_ticket_blocks = QLabel('구역: ')
-        self.cmb_ticket_blocks = QComboBox()
-        self.cmb_ticket_blocks.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-
-        self.le_detail_block = QLineEdit()
-        self.le_detail_block.setPlaceholderText('상세 구역 (작포)')
-
         # 몇명이나 예매할지
         self.lb_ticket_count = QLabel('연석: ')
         self.sb_ticket_count = QSpinBox()
         self.sb_ticket_count.setMinimum(1)
         self.sb_ticket_count.setMaximum(5)
         self.sb_ticket_count.setValue(1)
+
+        #돌릴 프로그램 개수
+        self.lb_program_cnt = QLabel('프로그램 개수: ')
+        self.sb_program_cnt = QSpinBox()
+        self.sb_program_cnt.setMinimum(1)
+        self.sb_program_cnt.setValue(1)
+
+        #좌석배치구역
+        self.le_area = QLineEdit()
+        self.le_area.setPlaceholderText('좌석구역 ex:)001,002,003')
+        self.le_area.setFixedWidth(100)
 
         self.rb_left = QRadioButton('좌측 우선')
         self.rb_left.setChecked(True)
@@ -166,13 +162,11 @@ class Form(QWidget):
         self.timeEdit.setDisplayFormat("HH:mm:ss")
         self.timeEdit.setTime(datetime.datetime.now().time())
 
-        self.hbox_seq_detail.addWidget(self.lb_ticket_seq)
-        self.hbox_seq_detail.addWidget(self.cmb_ticket_seq)
-        self.hbox_seq_detail.addWidget(self.lb_ticket_blocks)
-        self.hbox_seq_detail.addWidget(self.cmb_ticket_blocks)
-        self.hbox_seq_detail.addWidget(self.le_detail_block)
         self.hbox_seq_detail.addWidget(self.lb_ticket_count)
         self.hbox_seq_detail.addWidget(self.sb_ticket_count)
+        self.hbox_seq_detail.addWidget(self.lb_program_cnt)
+        self.hbox_seq_detail.addWidget(self.sb_program_cnt)
+        self.hbox_seq_detail.addWidget(self.le_area)
         self.hbox_seq_detail.addWidget(self.rb_left)
         self.hbox_seq_detail.addWidget(self.rb_middle)
         self.hbox_seq_detail.addWidget(self.rb_right)
@@ -213,9 +207,6 @@ class Form(QWidget):
         self.sb_captcha_delay.setValue(0.5)
         self.sb_captcha_delay.setSingleStep(0.1)
         self.sb_captcha_delay.setDecimals(3)
-        self.cb_captcha_automation = QCheckBox('리캡챠 자동화')
-        self.cb_auto_reselect = QCheckBox('이선좌 발생 시 재선택')
-        self.cb_lck_auto_reselect = QCheckBox('LCK 자동배정')
         self.btn_clear_log = QPushButton('로그 지우기')
 
         self.hbox_control.addWidget(self.btn_start)
@@ -227,9 +218,6 @@ class Form(QWidget):
         self.hbox_control.addWidget(self.sb_pre_req)
         self.hbox_control.addWidget(self.lb_captcha_delay)  # 새로운 컨트롤 추가
         self.hbox_control.addWidget(self.sb_captcha_delay)  # 새로운 컨트롤 추가
-        self.hbox_control.addWidget(self.cb_captcha_automation)
-        self.hbox_control.addWidget(self.cb_auto_reselect)
-        self.hbox_control.addWidget(self.cb_lck_auto_reselect)
         self.hbox_control.addWidget(self.btn_clear_log)
 
         self.gb_control = QGroupBox('제어')
@@ -246,14 +234,6 @@ class Form(QWidget):
         self.importGoodsDetail = ImportGoodsDetail(self, ticket_id)
         self.importGoodsDetail.loadFinished.connect(self.loadFinished)
         self.importGoodsDetail.start()
-
-    def auto_reselect_changed(self):
-        if self.cb_auto_reselect.isChecked():
-            self.auto_reselect = True
-            self.printLog('이선좌 발생 시 재선택 옵션이 활성화되었습니다.')
-        else:
-            self.auto_reselect = False
-            self.printLog('이선좌 발생 시 재선택 옵션이 비활성화되었습니다.')
 
     @pyqtSlot(str)
     def printLog(self, text):
@@ -281,15 +261,22 @@ class Form(QWidget):
 
     def start(self):
         inter_ticket_id = self.le_ticket_id.text().replace(' ', '')
+        if inter_ticket_id == '':
+            self.printLog("상품코드 입력하고 조회부터 하세요")
+            return
 
-        self.ticketer = Ticketer(self, inter_ticket_id)
-        self.ticketer.update_signal.connect(self.printLog)
-        self.ticketer.start()
+        for i in range(self.sb_program_cnt.value()):
+            ticketer = Ticketer(self, inter_ticket_id)
+            ticketer.update_signal.connect(self.printLog)
+            ticketer.start()
+            self.threads.append(ticketer)
+
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
 
     def stop(self):
-        self.ticketer.quit()
+        for thread in self.threads:
+            thread.quit()
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
 

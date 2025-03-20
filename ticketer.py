@@ -20,19 +20,25 @@ class Ticketer(QThread):
         앞의 3구역을 찾는다.
         :return: seats_list (정렬된 좌석 element 리스트)
         '''
-        # seats = WebDriverWait(self.driver, 5).until(
-        #     EC.presence_of_all_elements_located((By.TAG_NAME, "circle"))
-        # )
         seats_list = []
-        areas = ['006','007','008']
-        # 배치도에 따라 다르게 설정될 수도 있음. 일단 앞 3구역만 찾기
-        for area in areas:
-            b_area = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, f"g#seat_block_001\\:{area}"))
+        areas = self.parent.le_ticket_id.text().replace(' ', '').split(',')
+
+
+        #구역이 설정되지 않은경우 전체 좌석에서 찾는다.
+        if len(areas) == 1 and areas[0] == '':
+            seats = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_all_elements_located((By.TAG_NAME, "circle"))
             )
-            if b_area != '':
-                seats = b_area.find_elements(By.TAG_NAME, "circle")
-                seats_list.extend(seats)
+            seats_list.extend(seats)
+        else:
+            #배치구역에서 찾기.
+            for area in areas:
+                b_area = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, f"g#seat_block_001\\:{area}"))
+                )
+                if b_area != '':
+                    seats = b_area.find_elements(By.TAG_NAME, "circle")
+                    seats_list.extend(seats)
 
         self.update_signal.emit(f'총 {len(seats_list)}개의 좌석 확인')
 
@@ -61,6 +67,7 @@ class Ticketer(QThread):
         self.driver.open(
             "https://accounts.interpark.com/authorize/ticket-pc?postProc=FULLSCREEN&origin=https%3A%2F%2Fticket.interpark.com%2FGate%2FTPLoginConfirmGate.asp%3FGroupCode%3D%26Tiki%3D%26Point%3D%26PlayDate%3D%26PlaySeq%3D%26HeartYN%3D%26TikiAutoPop%3D%26BookingBizCode%3D%26MemBizCD%3DWEBBR%26CPage%3D%26GPage%3Dhttps%253A%252F%252Ftickets.interpark.com%252F&version=v2")
 
+        #로그인 완료 기다리기
         while True:
             try:
                 if self.driver.get_current_url() == "https://tickets.interpark.com/":
@@ -70,6 +77,7 @@ class Ticketer(QThread):
                 continue
             time.sleep(0.1)
 
+        #상품 페이지로 이동
         self.driver.get(f"https://tickets.interpark.com/goods/{self.ticket_id}")
         time.sleep(2)
         element = WebDriverWait(self.driver, 10).until(
