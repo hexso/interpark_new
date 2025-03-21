@@ -61,6 +61,9 @@ class Ticketer():
         return sorted_seats_list
 
     def login(self):
+        self.driver.open(
+            "https://accounts.interpark.com/authorize/ticket-pc?postProc=FULLSCREEN&origin=https%3A%2F%2Fticket.interpark.com%2FGate%2FTPLoginConfirmGate.asp%3FGroupCode%3D%26Tiki%3D%26Point%3D%26PlayDate%3D%26PlaySeq%3D%26HeartYN%3D%26TikiAutoPop%3D%26BookingBizCode%3D%26MemBizCD%3DWEBBR%26CPage%3D%26GPage%3Dhttps%253A%252F%252Ftickets.interpark.com%252F&version=v2")
+
         with open(credential_file_name, "r", encoding="utf-8") as f:
             lines = f.readlines()
         while True:
@@ -90,8 +93,6 @@ class Ticketer():
 
     def run(self):
         self.driver = Driver(uc=True)
-        self.driver.open(
-            "https://accounts.interpark.com/authorize/ticket-pc?postProc=FULLSCREEN&origin=https%3A%2F%2Fticket.interpark.com%2FGate%2FTPLoginConfirmGate.asp%3FGroupCode%3D%26Tiki%3D%26Point%3D%26PlayDate%3D%26PlaySeq%3D%26HeartYN%3D%26TikiAutoPop%3D%26BookingBizCode%3D%26MemBizCD%3DWEBBR%26CPage%3D%26GPage%3Dhttps%253A%252F%252Ftickets.interpark.com%252F&version=v2")
 
         #로그인 완료 기다리기
         self.login()
