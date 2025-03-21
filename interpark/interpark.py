@@ -6,6 +6,7 @@ from PyQt5.QtGui import QIntValidator, QIcon, QPixmap
 import datetime
 import requests
 import sys
+import os
 
 class ImportGoodsDetail(QThread):
     loadFinished = pyqtSignal(dict)
@@ -266,13 +267,16 @@ class Form(QWidget):
 
         for i in range(self.sb_program_cnt.value()):  # ✅ 각 검색어를 별도 프로세스로 실행
             process = QProcess(self)
-            process.setProgram("python")  # 실행할 프로그램 (Python)
+            process.setProgram(sys.executable)  # 실행할 프로그램 (Python)
             process.setArguments(["ticketer.py", str(inter_ticket_id), f'id{i}.txt'])  # ✅ 인덱스 값과 검색어 전달
             process.setProcessChannelMode(QProcess.MergedChannels)  # ✅ 표준출력(stdout) + 표준에러(stderr) 합치기
             process.readyReadStandardOutput.connect(lambda p=process: self.printLog(p))
             process.readyReadStandardError.connect(lambda p=process: self.printLog(p))
             process.start()
             self.processes.append(process)
+            process.errorOccurred.connect(lambda err: print(f"Process error: {err}"))
+            process.started.connect(lambda: print("Process started"))
+            process.finished.connect(lambda code, status: print(f"Finished with code {code}, status {status}"))
 
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
@@ -283,6 +287,7 @@ class Form(QWidget):
             self.printLog(f"프로세스 {process.processId()} 종료됨.")
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
+        self.processes = []
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

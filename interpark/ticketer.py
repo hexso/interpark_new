@@ -3,12 +3,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from PyQt5.QtCore import QThread, pyqtSignal
 import time
 import sys
 
 ticket_id = sys.argv[1]  # 첫 번째 인자 (상품설명)
 credential_file_name = sys.argv[2]  # 첫 번째 인자 (상품설명)
+areas = []
+if len(sys.argv) > 3:
+    areas = sys.argv[2].replace(' ', '').split(',')
 
 class Ticketer():
 
@@ -20,12 +22,11 @@ class Ticketer():
         앞의 3구역을 찾는다.
         :return: seats_list (정렬된 좌석 element 리스트)
         '''
+        global areas
         seats_list = []
-        areas = self.parent.le_ticket_id.text().replace(' ', '').split(',')
-
 
         #구역이 설정되지 않은경우 전체 좌석에서 찾는다.
-        if len(areas) == 1 and areas[0] == '':
+        if len(areas) == 0 or (len(areas) == 1 and areas[0] == ''):
             seats = WebDriverWait(self.driver, 5).until(
                 EC.presence_of_all_elements_located((By.TAG_NAME, "circle"))
             )
@@ -40,7 +41,7 @@ class Ticketer():
                     seats = b_area.find_elements(By.TAG_NAME, "circle")
                     seats_list.extend(seats)
 
-        self.update_signal.emit(f'총 {len(seats_list)}개의 좌석 확인')
+        print(f'총 {len(seats_list)}개의 좌석 확인')
 
         return seats_list
 
@@ -128,9 +129,9 @@ class Ticketer():
                 ActionChains(self.driver).move_to_element(seat).click().perform()
                 break
 
-
-        button = self.driver.find_element("xpath",
-                                     "//button[contains(@class, 'EntButton_button__bdl_j') and contains(@class, 'EntButton_primary__UOX1_')]")
+        button = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'EntButton_button__bdl_j') and contains(@class, 'EntButton_primary__UOX1_')]"))
+        )
         button.click()
 
 if __name__ == '__main__':
