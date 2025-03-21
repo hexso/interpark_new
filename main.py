@@ -1,12 +1,11 @@
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSpinBox
 from PyQt5.QtWidgets import QPushButton, QListWidget, QListWidgetItem, QGroupBox, QComboBox, QMessageBox, QTimeEdit, QCheckBox
 from PyQt5.QtWidgets import QDialog, QRadioButton, QDoubleSpinBox
-from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, Qt, QProcess
 from PyQt5.QtGui import QIntValidator, QIcon, QPixmap
 import datetime
 import requests
 import sys
-from ticketer import Ticketer
 
 class ImportGoodsDetail(QThread):
     loadFinished = pyqtSignal(dict)
@@ -64,7 +63,7 @@ class Form(QWidget):
     def __init__(self):
         super().__init__()
         self.init_ui()
-        self.threads = []
+        self.processes = []
         self.auto_reselect = False
 
         self.running = False
@@ -265,18 +264,23 @@ class Form(QWidget):
             self.printLog("상품코드 입력하고 조회부터 하세요")
             return
 
-        for i in range(self.sb_program_cnt.value()):
-            ticketer = Ticketer(self, inter_ticket_id)
-            ticketer.update_signal.connect(self.printLog)
-            ticketer.start()
-            self.threads.append(ticketer)
+        for i in range(1):  # ✅ 각 검색어를 별도 프로세스로 실행
+            process = QProcess(self)
+            process.setProgram("python")  # 실행할 프로그램 (Python)
+            process.setArguments(["ticketer.py", str(inter_ticket_id), f'id{i}.txt'])  # ✅ 인덱스 값과 검색어 전달
+            process.setProcessChannelMode(QProcess.MergedChannels)  # ✅ 표준출력(stdout) + 표준에러(stderr) 합치기
+            process.readyReadStandardOutput.connect(lambda p=process: self.printLog(p))
+            process.readyReadStandardError.connect(lambda p=process: self.printLog(p))
+            process.start()
+            self.processes.append(process)
 
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
 
     def stop(self):
-        for thread in self.threads:
-            thread.quit()
+        for process in self.processes:
+            process.terminate()
+            self.printLog(f"프로세스 {process.processId()} 종료됨.")
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
 

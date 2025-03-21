@@ -5,14 +5,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from PyQt5.QtCore import QThread, pyqtSignal
 import time
+import sys
 
+ticket_id = sys.argv[1]  # 첫 번째 인자 (상품설명)
+credential_file_name = sys.argv[2]  # 첫 번째 인자 (상품설명)
 
-class Ticketer(QThread):
+class Ticketer():
 
-    update_signal = pyqtSignal(str)
-
-    def __init__(self, parent, ticket_id):
-        super().__init__(parent)
+    def __init__(self, ticket_id):
         self.ticket_id = ticket_id
 
     def get_seat_list(self):
@@ -60,7 +60,33 @@ class Ticketer(QThread):
         sorted_seats_list = [element[0] for element in sorted_seats]
         return sorted_seats_list
 
+    def login(self):
+        with open(credential_file_name, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        while True:
+            try:
+                login_button = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, "//button[@type='submit']"))
+                )
+                break
+            except:
+                print("로그인버튼이 활성화 되지 않았습니다. 다시 시도해주세요.")
+                continue
 
+
+        # 첫 번째 줄: 아이디, 두 번째 줄: 패스워드
+        username = lines[0].strip()
+        password = lines[1].strip()
+
+        username_input = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.NAME, "username"))
+        )
+        username_input.send_keys(username)
+        password_input = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.NAME, "password"))
+        )
+        password_input.send_keys(password)
+        login_button.click()
 
     def run(self):
         self.driver = Driver(uc=True)
@@ -68,6 +94,7 @@ class Ticketer(QThread):
             "https://accounts.interpark.com/authorize/ticket-pc?postProc=FULLSCREEN&origin=https%3A%2F%2Fticket.interpark.com%2FGate%2FTPLoginConfirmGate.asp%3FGroupCode%3D%26Tiki%3D%26Point%3D%26PlayDate%3D%26PlaySeq%3D%26HeartYN%3D%26TikiAutoPop%3D%26BookingBizCode%3D%26MemBizCD%3DWEBBR%26CPage%3D%26GPage%3Dhttps%253A%252F%252Ftickets.interpark.com%252F&version=v2")
 
         #로그인 완료 기다리기
+        self.login()
         while True:
             try:
                 if self.driver.get_current_url() == "https://tickets.interpark.com/":
@@ -104,3 +131,7 @@ class Ticketer(QThread):
         button = self.driver.find_element("xpath",
                                      "//button[contains(@class, 'EntButton_button__bdl_j') and contains(@class, 'EntButton_primary__UOX1_')]")
         button.click()
+
+if __name__ == '__main__':
+    ticketer = Ticketer(ticket_id)
+    ticketer.run()
