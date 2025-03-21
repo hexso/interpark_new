@@ -282,10 +282,10 @@ class Form(QWidget):
     def start(self):
         inter_ticket_id = self.le_ticket_id.text().replace(' ', '')
 
-        for i in range(2):  # ✅ 각 검색어를 별도 프로세스로 실행
+        for i in range(1):  # ✅ 각 검색어를 별도 프로세스로 실행
             process = QProcess(self)
             process.setProgram("python")  # 실행할 프로그램 (Python)
-            process.setArguments(["ticketer.py", str(inter_ticket_id)])  # ✅ 인덱스 값과 검색어 전달
+            process.setArguments(["ticketer.py", str(inter_ticket_id), f'id{i}.txt'])  # ✅ 인덱스 값과 검색어 전달
             process.setProcessChannelMode(QProcess.MergedChannels)  # ✅ 표준출력(stdout) + 표준에러(stderr) 합치기
             process.readyReadStandardOutput.connect(lambda p=process: self.printLog(p))
             process.readyReadStandardError.connect(lambda p=process: self.printLog(p))
