@@ -5,14 +5,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from PyQt5.QtCore import QThread, pyqtSignal
 import time
+import sys
 
+ticket_id = sys.argv[1]  # 첫 번째 인자 (상품설명)
 
-class Ticketer(QThread):
+class Ticketer():
 
-    update_signal = pyqtSignal(str)
-
-    def __init__(self, parent, ticket_id):
-        super().__init__(parent)
+    def __init__(self, ticket_id):
         self.ticket_id = ticket_id
 
     def get_seat_list(self):
@@ -96,3 +95,7 @@ class Ticketer(QThread):
         button = self.driver.find_element("xpath",
                                      "//button[contains(@class, 'EntButton_button__bdl_j') and contains(@class, 'EntButton_primary__UOX1_')]")
         button.click()
+
+if __name__ == '__main__':
+    ticketer = Ticketer(ticket_id)
+    ticketer.run()
