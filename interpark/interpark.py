@@ -7,7 +7,7 @@ import time
 import sys
 
 ticket_id = sys.argv[1]  # 첫 번째 인자 (상품설명)
-credential_file_name = sys.argv[2]  # 첫 번째 인자 (상품설명)
+credential_file_name = sys.argv[2]  # 계정 파일 txt
 areas = []
 if len(sys.argv) > 3:
     areas = sys.argv[2].replace(' ', '').split(',')

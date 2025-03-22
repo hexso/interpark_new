@@ -32,8 +32,9 @@ class TicketApp(QWidget):
     def run_script(self, script_path):
         """ 버튼 클릭 시 해당 main.py 실행 후 현재 창 종료 """
         try:
-            subprocess.Popen([sys.executable, script_path])  # 외부 스크립트 실행
+            proc = subprocess.Popen([sys.executable, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # 외부 스크립트 실행
             self.close()  # 현재 창 닫기
+            stdout, stderr = proc.communicate()
         except Exception as e:
             print(f"Error: {e}")
 
