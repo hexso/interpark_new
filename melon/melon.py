@@ -11,6 +11,8 @@ from selenium import webdriver
 
 BEFORE_START_SEC = 2 #초단위
 START_TIME_MILLI = 1500
+# 일단 가우시안 말고 0.2초마다로 바꾸자.
+optimized_time_offsets = [1.2]
 
 class Melon(): # 브라우저 돌아가는 스레드
     def __init__(self, ticket_id, start_time, scheduleNo='100001'):
@@ -94,7 +96,10 @@ class Melon(): # 브라우저 돌아가는 스레드
             "requestservicetype": "P"
         }
 
-        response = self.session.get(url, headers=headers, params=params)
+        session = requests.Session()
+        for cookie in self.driver.get_cookies():
+            session.cookies.set(cookie['name'], cookie['value'])
+        response = session.get(url, headers=headers, params=params)
         return response
 
     # 4. nflActId,key들을 통해 실제 접속을 위한 key를 받는다
@@ -180,9 +185,6 @@ class Melon(): # 브라우저 돌아가는 스레드
             session.cookies.set(cookie['name'], cookie['value'])
         self.session = session
 
-        #일단 가우시안 말고 0.2초마다로 바꾸자.
-        optimized_time_offsets = [1.2]
-
         real_key_list = []
         def get_key(target_time, time_offset):
             '''
@@ -229,6 +231,9 @@ class Melon(): # 브라우저 돌아가는 스레드
             print(key)
 
         print('수행을 완료하였습니다.')
+        while True:
+            pass
+            time.sleep(5)
 
 
 if __name__ == '__main__':
